@@ -219,6 +219,33 @@ func TestExecuteModel(t *testing.T) {
 	}
 }
 
+func TestExecuteModelStreamHTTPError(t *testing.T) {
+	for _, status := range []int{400, 401, 403, 429, 503} {
+		t.Run(strconv.Itoa(status), func(t *testing.T) {
+			setupTest(t)
+			closed := 0
+			upstream := &EnvelopeError{Code: "home_upstream_error", Message: "upstream rejected request", HTTPStatus: status}
+			hostCall = func(method string, _ any) (json.RawMessage, error) {
+				switch method {
+				case "host.model.execute_stream":
+					return json.RawMessage(`{"stream_id":"s"}`), nil
+				case "host.model.stream_read":
+					return nil, fmt.Errorf("buffered response: %w", upstream)
+				case "host.model.stream_close":
+					closed++
+					return json.RawMessage(`{}`), nil
+				}
+				t.Fatalf("unexpected host method %s", method)
+				return nil, nil
+			}
+			_, got, err := executeModel(context.Background(), credential{ID: "a", Provider: "codex"}, "m", nil, nil)
+			if got != status || !errors.Is(err, upstream) || closed != 1 {
+				t.Fatalf("status=%d err=%v closed=%d", got, err, closed)
+			}
+		})
+	}
+}
+
 func TestExecuteModelAbandonsStream(t *testing.T) {
 	setupTest(t)
 	closed := make(chan struct{})

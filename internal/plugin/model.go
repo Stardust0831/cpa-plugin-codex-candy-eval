@@ -132,6 +132,11 @@ func executeModel(ctx context.Context, auth credential, model string, body any, 
 		if ctx.Err() != nil {
 			err = context.Cause(ctx)
 		}
+		// Buffered hosts can report an HTTP rejection only when the stream is read.
+		var hostError *EnvelopeError
+		if errors.As(err, &hostError) {
+			return result, hostError.HTTPStatus, err
+		}
 		return result, 0, err
 	}
 	result.InputTokens = out.Usage.InputTokens

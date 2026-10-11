@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+// Version identifies the shared evaluation engine in both distribution formats.
+const Version = pluginVersion
+
 // SetStateFile configures standalone persistence before registration starts.
 func SetStateFile(path string) error {
 	if strings.TrimSpace(path) == "" {
@@ -20,6 +23,10 @@ func SetStateFile(path string) error {
 	mu.Lock()
 	defer mu.Unlock()
 	if loaded {
+		// A store-loaded Home panel can be disabled and enabled in the same process.
+		if quiescing && statePath == path {
+			return nil
+		}
 		return fmt.Errorf("plugin state is already loaded")
 	}
 	statePath = path

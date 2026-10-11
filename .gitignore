@@ -9,3 +9,4 @@ home.env
 !.env.example
 .playwright-cli/
 .agents
+__pycache__/

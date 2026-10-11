@@ -2,7 +2,7 @@
 
 在 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 管理面板中进行**糖果测试**、**模型指纹测试**、**ModelTrace 模型归因**和**鹈鹕测试**。
 
-使用 **CPA Home** 时，可启动同一仓库中的独立测试面板，默认端口 `8320`。无需修改 Home、CPA 节点或原有插件加载方式，见 [CPA Home 适配说明](docs/home.md)。
+使用 **CPA Home** 时，添加本仓库的商店源后搜索安装 **`cpa-home-codex-eval`**。该版本由 Home 加载，测试面板默认使用独立端口 `8320`；需要 Home 本机环境变量及 `load-in-home: true`，见 [CPA Home 商店安装说明](docs/home.md)。
 
 ![example](docs/images/example.png)
 
@@ -14,7 +14,7 @@
 
 ### 插件商店
 
-CPA 管理面板（CPAMC 或 CPAMP）插件商店搜索安装 `cpa-codex-candy-eval`，并在面板左侧打开「Codex 降智测试」。
+普通 CPA 管理面板（CPAMC 或 CPAMP）插件商店搜索安装 `cpa-codex-candy-eval`，并在面板左侧打开「Codex 降智测试」。Home 用户请使用上面的 `cpa-home-codex-eval`，两者是不同的商店条目。
 
 ### 人工安装
 

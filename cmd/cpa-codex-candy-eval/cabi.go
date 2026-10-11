@@ -120,7 +120,7 @@ func cliproxyPluginCall(method *C.char, request *C.uint8_t, requestLen C.size_t,
 	if request != nil && requestLen > 0 {
 		body = C.GoBytes(unsafe.Pointer(request), C.int(requestLen))
 	}
-	raw := plugin.HandleMethod(C.GoString(method), body)
+	raw := handleMethod(C.GoString(method), body)
 	response.ptr = C.CBytes(raw)
 	response.len = C.size_t(len(raw))
 	return 0
@@ -134,4 +134,4 @@ func cliproxyPluginFree(ptr unsafe.Pointer, _ C.size_t) {
 }
 
 //export cliproxyPluginShutdown
-func cliproxyPluginShutdown() { plugin.Quiesce() }
+func cliproxyPluginShutdown() { shutdown() }

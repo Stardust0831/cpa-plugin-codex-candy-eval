@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -21,9 +22,12 @@ ACCOUNT = "00000000-0000-0000-0000-000000000001"
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--binary", default="./dist/cpa-home-codex-eval")
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--binary", default="./dist/cpa-home-codex-eval")
+    source.add_argument("--library", help="exercise the store plugin through its C ABI")
     args = parser.parse_args()
     binary = str(Path(args.binary).resolve())
+    command = [sys.executable, str(Path(__file__).with_name("home_plugin_host.py")), str(Path(args.library).resolve())] if args.library else [binary]
     calls, failures = [], []
     lock = threading.Lock()
 
@@ -125,7 +129,7 @@ def main():
             env = dict(os.environ, CPA_HOME_URL=f"http://127.0.0.1:{home.server_port}", CPA_HOME_MANAGEMENT_KEY=HOME_KEY, CPA_HOME_EVAL_KEY=PANEL_KEY, CPA_HOME_EVAL_LISTEN=f"127.0.0.1:{panel_port}", CPA_HOME_EVAL_DATA_DIR=tmp)
 
             def start():
-                child = subprocess.Popen([binary], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+                child = subprocess.Popen(command, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
                 deadline = time.monotonic() + 10
                 while time.monotonic() < deadline:
                     if child.poll() is not None:

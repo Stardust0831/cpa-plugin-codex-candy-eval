@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "plugins": [
+    {
+      "id": "cpa-home-codex-eval",
+      "name": "CPA Home · Codex 降智测试",
+      "description": "在 Home 控制面运行独立端口的糖果、指纹、ModelTrace 和鹈鹕测试面板。需要 load-in-home: true 及 Home 本机环境配置；CPA 工作节点不运行面板。",
+      "author": "Stardust0831 / haowang02",
+      "repository": "https://github.com/Stardust0831/cpa-plugin-codex-candy-eval",
+      "homepage": "https://github.com/Stardust0831/cpa-plugin-codex-candy-eval/blob/feat/cpa-home-standalone/docs/home.md",
+      "license": "MIT",
+      "tags": ["Home", "Management", "Codex", "Evaluation"]
+    }
+  ]
+}

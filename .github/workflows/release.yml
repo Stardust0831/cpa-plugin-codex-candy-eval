@@ -22,6 +22,15 @@ jobs:
       - run: go vet ./...
       - run: go test -race ./...
       - run: node scripts/test-ui.cjs
+      - run: node scripts/test-home-ui.cjs
+      - name: Test standalone and store-loaded Home panels
+        run: |
+          mkdir -p dist
+          go build -o dist/cpa-home-codex-eval ./cmd/cpa-home-codex-eval
+          go build -tags 'cshared homepanel' -buildmode=c-shared -o dist/cpa-home-codex-eval.so ./cmd/cpa-codex-candy-eval
+          python3 scripts/test-home-deployment.py --binary ./dist/cpa-home-codex-eval
+          python3 scripts/test-home-deployment.py --library ./dist/cpa-home-codex-eval.so
+          python3 scripts/test-home-plugin.py ./dist/cpa-home-codex-eval.so
 
   build:
     name: Build ${{ matrix.os }}-${{ matrix.arch }}
@@ -51,32 +60,42 @@ jobs:
             -v "$PWD:/src" -w /src -v "$(go env GOROOT):/opt/go:ro" \
             -e GOROOT=/opt/go -e HOME=/tmp -e GOFLAGS=-buildvcs=false \
             ${{ matrix.image }} \
-            /opt/go/bin/go build -trimpath -ldflags="-s -w" -tags cshared -buildmode=c-shared -o dist/cpa-codex-candy-eval.so ./cmd/cpa-codex-candy-eval
+            bash -c '
+              /opt/go/bin/go build -trimpath -ldflags="-s -w" -tags cshared -buildmode=c-shared -o dist/cpa-codex-candy-eval.so ./cmd/cpa-codex-candy-eval &&
+              /opt/go/bin/go build -trimpath -ldflags="-s -w" -tags "cshared homepanel" -buildmode=c-shared -o dist/cpa-home-codex-eval.so ./cmd/cpa-codex-candy-eval
+            '
 
       - name: Build plugin
         if: matrix.os != 'linux'
         shell: bash
         env:
           CGO_ENABLED: "1"
-        run: go build -trimpath -ldflags="-s -w" -tags cshared -buildmode=c-shared -o dist/cpa-codex-candy-eval.${{ matrix.ext }} ./cmd/cpa-codex-candy-eval
+        run: |
+          go build -trimpath -ldflags="-s -w" -tags cshared -buildmode=c-shared -o dist/cpa-codex-candy-eval.${{ matrix.ext }} ./cmd/cpa-codex-candy-eval
+          go build -trimpath -ldflags="-s -w" -tags 'cshared homepanel' -buildmode=c-shared -o dist/cpa-home-codex-eval.${{ matrix.ext }} ./cmd/cpa-codex-candy-eval
 
       # The CPA plugin store needs <id>_<version>_<os>_<arch>.zip with the library at the zip root.
       - name: Package
         if: matrix.os != 'windows'
         run: |
-          name="cpa-codex-candy-eval_${GITHUB_REF_NAME#v}_${{ matrix.os }}_${{ matrix.arch }}"
-          tar -czf "$name.tar.gz" -C dist cpa-codex-candy-eval.${{ matrix.ext }}
-          zip -j "$name.zip" dist/cpa-codex-candy-eval.${{ matrix.ext }}
+          for id in cpa-codex-candy-eval cpa-home-codex-eval; do
+            name="${id}_${GITHUB_REF_NAME#v}_${{ matrix.os }}_${{ matrix.arch }}"
+            tar -czf "$name.tar.gz" -C dist "$id.${{ matrix.ext }}"
+            zip -j "$name.zip" "dist/$id.${{ matrix.ext }}"
+          done
 
       - name: Package
         if: matrix.os == 'windows'
         shell: pwsh
-        run: Compress-Archive -Path dist/cpa-codex-candy-eval.dll -DestinationPath "cpa-codex-candy-eval_$($env:GITHUB_REF_NAME.TrimStart('v'))_windows_amd64.zip"
+        run: |
+          foreach ($id in @("cpa-codex-candy-eval", "cpa-home-codex-eval")) {
+            Compress-Archive -Path "dist/$id.dll" -DestinationPath "$($id)_$($env:GITHUB_REF_NAME.TrimStart('v'))_windows_amd64.zip"
+          }
 
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}-${{ matrix.arch }}
-          path: cpa-codex-candy-eval_*_${{ matrix.os }}_${{ matrix.arch }}.*
+          path: cpa-*eval_*_${{ matrix.os }}_${{ matrix.arch }}.*
           if-no-files-found: error
 
   release:

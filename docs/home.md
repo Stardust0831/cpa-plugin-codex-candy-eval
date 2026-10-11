@@ -1,31 +1,71 @@
-# CPA Home 独立测试面板
+# CPA Home 测试插件
 
-Home 目前没有提供本插件需要的通用管理页面和模型执行回调。因此，Home 适配作为本仓库的可选启动方式，复用原有测试引擎和界面，通过 Home 已有 Management API 连接账号。它不是装进 Home 后就能显示菜单的动态库。
+Home 版插件 ID 为 **`cpa-home-codex-eval`**。通过 Home 插件商店安装后，由 Home 的动态库加载器启动测试面板，复用原有测试引擎和界面，通过 Home 已有 Management API 连接账号。
 
-无需修改 Home 或 CPA、安装补丁、重启集群或更换管理面板。停止此进程即可撤下测试面板；默认监听 `127.0.0.1:8320`，Home 继续使用自己的端口。
+Home 尚不暴露插件资源页面，所以面板仍使用独立端口，默认地址为 **`http://127.0.0.1:8320/`**，不出现在 Home 的插件菜单里。无需修改 Home 或 CPA 源码。
 
-## 启动
+## 从 Home 插件商店安装
 
-需要 Go 1.24 或更新版本。该适配按 CPA Home v1.1.0 的 v8 Management API 实现，目前只在模拟 Home 环境中验证。
+该适配按 CPA Home v1.1.0 的 v8 Management API 实现，目前在模拟 Home 环境中验证。商店安装使用预编译动态库，无需服务器安装 Go。
 
-```sh
-mkdir -p dist
-go build -trimpath -o dist/cpa-home-codex-eval ./cmd/cpa-home-codex-eval
-cp home.env.example home.env
-chmod 600 home.env
+1. 在 Home 的插件商店源设置中添加以下 URL。它是自定义源，尚未收录到内置官方源。
+
+```text
+https://raw.githubusercontent.com/Stardust0831/cpa-plugin-codex-candy-eval/feat/cpa-home-standalone/registry.json
 ```
 
-在 `home.env` 中填写 Home 地址、Home 管理密钥以及独立的面板访问密钥：
+2. 为**运行面板的那个 Home 进程**配置以下环境变量，再重启该 Home 进程使环境生效。可使用 Compose 的 `environment` / `env_file` 或 systemd 的 `EnvironmentFile`。这些值不放进会同步到 CPA 工作节点的插件配置中。
 
 ```dotenv
 CPA_HOME_URL=http://127.0.0.1:8317
 CPA_HOME_MANAGEMENT_KEY=你的Home管理密钥
 CPA_HOME_EVAL_KEY=另设一个面板访问密钥
 CPA_HOME_EVAL_LISTEN=127.0.0.1:8320
-CPA_HOME_EVAL_DATA_DIR=./data
+CPA_HOME_EVAL_DATA_DIR=/持久化目录/cpa-home-codex-eval
 ```
 
-这两个密钥必须不同；Home 管理密钥只保留在服务端，浏览器登录填写 `CPA_HOME_EVAL_KEY`。启动命令：
+两个密钥必须不同。`CPA_HOME_URL` 是从 Home 进程所在环境可访问的 Home 地址；管理密钥只在服务端使用，浏览器登录填写 `CPA_HOME_EVAL_KEY`。HA 部署只给希望运行面板的 Home 实例注入这组变量；工作节点不要配置这组变量。
+
+3. 在 Home 插件商店中搜索 **`cpa-home-codex-eval`** 或 **`CPA Home · Codex 降智测试`**，点击安装。启用全局插件开关，并在该插件配置中启用 **`load-in-home: true`**。相关 Home 配置结构如下，请合并到现有配置，保留其他插件和安装时生成的 `store` 字段：
+
+```yaml
+plugins:
+  enabled: true
+  store-sources:
+    - https://raw.githubusercontent.com/Stardust0831/cpa-plugin-codex-candy-eval/feat/cpa-home-standalone/registry.json
+  configs:
+    cpa-home-codex-eval:
+      enabled: true
+      load-in-home: true
+      # store 字段由插件商店安装自动写入，保留即可。
+```
+
+Home 的商店默认只记录安装 manifest 并向节点分发；`load-in-home` 是 Home 自己要求的控制面加载开关。只点安装、没有配置环境变量和这个开关时，不会启动面板。Home 使用数据库配置，应通过 Home 管理界面/API 修改生效配置。
+
+4. 打开面板 `http://127.0.0.1:8320/`，使用独立的面板访问密钥登录。远程机器可使用 SSH 转发：
+
+```sh
+ssh -L 8320:127.0.0.1:8320 用户名@Home服务器
+```
+
+在自己电脑打开同一地址即可。默认绑定回环地址；需要容器端口映射或反向代理时，可把 `CPA_HOME_EVAL_LISTEN` 改为 `0.0.0.0:8320` 并配置相应端口映射及 HTTPS。端口监听在加载动态库的 Home 进程所在网络空间；容器内的 `127.0.0.1` 是容器自身。
+
+停用或卸载插件会关闭面板端口并结束测试请求，历史文件保留；再次启用会继续使用同一历史目录。更新通过商店执行。Home 可能仍将该动态库分发到 CPA 节点；未配置本机密钥的节点仅注册插件元数据，不启动面板、不访问账号、不读写测试历史。
+
+## 可选：独立程序启动
+
+保留之前的独立运行方式，不要与商店版本同时绑定同一端口或使用同一历史目录。需要 Go 1.24 或更新版本：
+
+```sh
+git clone --branch feat/cpa-home-standalone https://github.com/Stardust0831/cpa-plugin-codex-candy-eval.git
+cd cpa-plugin-codex-candy-eval
+mkdir -p dist
+go build -trimpath -o dist/cpa-home-codex-eval ./cmd/cpa-home-codex-eval
+cp home.env.example home.env
+chmod 600 home.env
+```
+
+填写 `home.env` 后启动：
 
 ```sh
 set -a
@@ -48,7 +88,7 @@ set +a
 - 这条测试路径不经过 CPA 工作节点的协议转换、调度、亲和性、混淆和常规请求用量统计。结果用于评估所选账号的回答，不能代表完整集群链路的表现。适配只做基本 Codex Responses 请求规范化和全局 OAuth 模型别名解析，不复刻 CPA 执行器。
 - 测试历史独立写入 `CPA_HOME_EVAL_DATA_DIR/cpa-home-codex-eval-state.json`，目录默认 `./data`；不写 Home 数据库或原有动态库的状态文件。保留每种测试最近 20 条记录。
 
-原有 CPA 动态库入口、插件商店安装方式和发布版本保持兼容。Home 面板需单独编译和启动，不会自动占用任何端口。
+原版 CPA 插件 ID 仍是 `cpa-codex-candy-eval`。Home 商店包使用独立 ID，避免安装时混淆或覆盖原版。两种商店包均遵循 CPA 的动态库 ABI、ZIP 命名及 SHA-256 校验规范。
 
 ## 模拟验证
 
@@ -58,6 +98,9 @@ go test -race ./...
 node scripts/test-ui.cjs
 node scripts/test-home-ui.cjs
 python3 scripts/test-home-deployment.py --binary ./dist/cpa-home-codex-eval
+go build -tags 'cshared homepanel' -buildmode=c-shared -o dist/cpa-home-codex-eval.so ./cmd/cpa-codex-candy-eval
+python3 scripts/test-home-deployment.py --library ./dist/cpa-home-codex-eval.so
+python3 scripts/test-home-plugin.py ./dist/cpa-home-codex-eval.so
 ```
 
-Go 集成测试和部署脚本使用本地模拟 Home 接口与合成凭证，验证账号读取、模型请求、四种测试及历史读取。部署脚本启动真实面板二进制，并在重启后检查历史；不连接真实 Home 或消耗真实账号额度。
+Go 集成测试和部署脚本使用本地模拟 Home 接口与合成凭证，验证账号读取、模型请求、四种测试及历史读取。部署脚本可启动真实面板二进制或通过 C ABI 加载商店动态库，并在重启后检查历史。生命周期测试验证无配置节点保持空闲、停用释放端口以及同一进程重新启用；不连接真实 Home 或消耗真实账号额度。

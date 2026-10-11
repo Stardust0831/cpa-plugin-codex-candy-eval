@@ -100,6 +100,19 @@ async function refreshCatalog({ signal, force = false } = {}) {
     signal?.throwIfAborted();
     if (cache !== catalogCache) throw new Error("凭证列表已更新，请重试。");
   };
+  if (HOME_MODE) {
+    const data = await api("/api/home/catalog", { signal });
+    const models = { time: Date.now(), ids: modelIDs(data.models).filter((id) => !HIDDEN_MODEL(id)) };
+    checkCurrent();
+    if (JSON.stringify(models.ids) !== JSON.stringify(cache.models?.ids)) {
+      resetCatalogCache({ owner: cache.owner, revision: "home", models, credentials: Object.create(null) });
+    } else {
+      cache.models = models;
+      saveCatalogCache();
+    }
+    catalogRefreshedAt = Date.now();
+    return;
+  }
   const [config, providerGroups] = await Promise.all([
     api("/v0/management/config", { signal }),
     // Group names come from v8; CPA before v8, or a config without provider keys, answers 404.

@@ -1,5 +1,6 @@
 "use strict";
 const BASE = "/v0/management/plugins/cpa-codex-candy-eval";
+const HOME_MODE = !!window.CPA_HOME_EVAL;
 const KEY_STORE = "cpa-codex-candy-eval.key";
 const PREF_STORE = "cpa-codex-candy-eval.prefs";
 const MASK_STORE = "cpa-codex-candy-eval.masked";
@@ -45,6 +46,7 @@ function applyTheme() {
     : matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "white";
 }
 function panelKey() {
+  if (HOME_MODE) return "";
   const k = panelValue("cli-proxy-auth")?.state?.managementKey;
   return typeof k === "string" ? k.trim() : "";
 }
@@ -70,7 +72,7 @@ async function api(path, { method = "GET", body, apiKey, signal } = {}) {
   let data = null;
   try { data = JSON.parse(text); } catch (_) {}
   // A 401 for a key replaced by a newer login must not sign that login out.
-  if (resp.status === 401 && apiKey === undefined && requestKey === key) throw new AuthError("管理密钥无效，请重新输入。");
+  if (resp.status === 401 && apiKey === undefined && requestKey === key) throw new AuthError(HOME_MODE ? "面板访问密钥无效，请重新输入。" : "管理密钥无效，请重新输入。");
   if (!resp.ok) {
     const err = data?.error;
     throw Object.assign(new Error(String((typeof err === "string" ? err : err?.message) || text || "HTTP " + resp.status).slice(0, 500)), { status: resp.status });

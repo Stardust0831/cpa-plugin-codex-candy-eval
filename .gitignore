@@ -1,4 +1,6 @@
 dist/
+data/
+home.env
 .DS_store
 
 # Private environment and deployment settings.

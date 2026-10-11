@@ -2,6 +2,8 @@
 
 在 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 管理面板中进行**糖果测试**、**模型指纹测试**、**ModelTrace 模型归因**和**鹈鹕测试**。
 
+使用 **CPA Home** 时，可启动同一仓库中的独立测试面板，默认端口 `8320`。无需修改 Home、CPA 节点或原有插件加载方式，见 [CPA Home 适配说明](docs/home.md)。
+
 ![example](docs/images/example.png)
 
 ## 安装

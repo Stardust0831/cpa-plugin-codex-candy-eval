@@ -119,9 +119,9 @@ const disabledFor = (reason) => reason ? `disabled data-tip="${esc(reason)}"` : 
 
 // CPA toggles auth files and config API keys (IDs "<provider>:apikey:…");
 // OpenAI-compatible providers can only be switched as a whole in CPA.
-const switchable = (a) => a.source === "auth_files" || a.id.startsWith(a.provider + ":apikey:");
+const switchable = (a) => !HOME_MODE && (a.source === "auth_files" || a.id.startsWith(a.provider + ":apikey:"));
 function enableSwitch(a) {
-  const locked = !switchable(a) ? "请在 CPA 中启用或停用此凭证" : credentialBusy(a) ? `${busyTest(a)}进行中，结束后才能切换` : switching.has(a.id) ? "正在保存…" : "";
+  const locked = !switchable(a) ? (HOME_MODE ? "请在 CPA Home 中启用或停用此凭证" : "请在 CPA 中启用或停用此凭证") : credentialBusy(a) ? `${busyTest(a)}进行中，结束后才能切换` : switching.has(a.id) ? "正在保存…" : "";
   return `<label class="switch"><input type="checkbox" role="switch" data-enable="${esc(a.id)}" aria-label="启用此凭证" aria-busy="${switching.has(a.id)}" ${a.disabled ? "" : "checked"} ${disabledFor(locked)}></label>`;
 }
 

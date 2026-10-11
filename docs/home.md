@@ -17,14 +17,14 @@ https://raw.githubusercontent.com/Stardust0831/cpa-plugin-codex-candy-eval/feat/
 2. 为**运行面板的那个 Home 进程**配置以下环境变量，再重启该 Home 进程使环境生效。可使用 Compose 的 `environment` / `env_file` 或 systemd 的 `EnvironmentFile`。这些值不放进会同步到 CPA 工作节点的插件配置中。
 
 ```dotenv
-CPA_HOME_URL=http://127.0.0.1:8317
+CPA_HOME_URL=http://127.0.0.1:8327
 CPA_HOME_MANAGEMENT_KEY=你的Home管理密钥
 CPA_HOME_EVAL_KEY=另设一个面板访问密钥
 CPA_HOME_EVAL_LISTEN=127.0.0.1:8320
 CPA_HOME_EVAL_DATA_DIR=/持久化目录/cpa-home-codex-eval
 ```
 
-两个密钥必须不同。`CPA_HOME_URL` 是从 Home 进程所在环境可访问的 Home 地址；管理密钥只在服务端使用，浏览器登录填写 `CPA_HOME_EVAL_KEY`。HA 部署只给希望运行面板的 Home 实例注入这组变量；工作节点不要配置这组变量。
+两个密钥必须不同。`CPA_HOME_URL` 必须填写从 Home 进程所在环境可访问的实际 Home 地址，上例使用 Home 默认端口 `8327`；它与 CPA 节点常用的 `8317` 不同。管理密钥只在服务端使用，浏览器登录填写 `CPA_HOME_EVAL_KEY`。HA 部署只给希望运行面板的 Home 实例注入这组变量；工作节点不要配置这组变量。
 
 3. 在 Home 插件商店中搜索 **`cpa-home-codex-eval`** 或 **`CPA Home · Codex 降智测试`**，点击安装。启用全局插件开关，并在该插件配置中启用 **`load-in-home: true`**。相关 Home 配置结构如下，请合并到现有配置，保留其他插件和安装时生成的 `store` 字段：
 
